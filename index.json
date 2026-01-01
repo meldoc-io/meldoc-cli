@@ -1,5 +1,5 @@
 {
-  "latest": "1.0.3",
+  "latest": "1.0.4",
   "versions": {
     "1.0.0": {
       "files": {
@@ -39,6 +39,16 @@
         "darwin/arm64": "v1.0.3/meldoc-1.0.3-darwin-arm64.tar.gz",
         "windows/amd64": "v1.0.3/meldoc-1.0.3-windows-amd64.zip",
         "windows/arm64": "v1.0.3/meldoc-1.0.3-windows-arm64.zip"
+      }
+    },
+    "1.0.4": {
+      "files": {
+        "linux/amd64": "v1.0.4/meldoc-1.0.4-linux-amd64.tar.gz",
+        "linux/arm64": "v1.0.4/meldoc-1.0.4-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.0.4/meldoc-1.0.4-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.0.4/meldoc-1.0.4-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.0.4/meldoc-1.0.4-windows-amd64.zip",
+        "windows/arm64": "v1.0.4/meldoc-1.0.4-windows-arm64.zip"
       }
     }
   }
