@@ -1,0 +1,14 @@
+MELDOC CLI - PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2025 Meldoc.io. All rights reserved.
+
+This software is proprietary and confidential. You may not:
+- Copy, modify, or distribute this software
+- Reverse engineer or decompile this software
+- Use this software for any purpose other than managing documentation with Meldoc.io
+
+This software is provided "AS IS" without warranty of any kind.
+
+By using this software, you agree to the full license terms in LICENSE file.
+
+For questions: legal@meldoc.io
