@@ -51,7 +51,7 @@ After installation, get started in 3 steps:
 
 ```bash
 cd /path/to/your/project
-meldoc init --project my-project
+meldoc init --token YOUR_TOKEN
 ```
 
 This creates `.meldoc/` directory with configuration and state files.
@@ -168,7 +168,7 @@ For licensing questions: <legal@meldoc.io>
 
 ```bash
 # Initialize project
-meldoc init --project <id>
+meldoc init --token <token>
 
 # Scan documentation files
 meldoc scan
@@ -183,7 +183,7 @@ meldoc pull --token <token>
 meldoc version
 
 # Get help
-meldoc --help
+meldoc help
 ```
 
 ### Configuration Options
@@ -191,24 +191,24 @@ meldoc --help
 **Option 1: Command-line flags**
 
 ```bash
-meldoc init --project my-docs 
-meldoc publish --project my-docs --token abc123
+meldoc init --token YOUR_TOKEN
+meldoc publish --token YOUR_TOKEN
 ```
 
 **Option 2: Environment variables (recommended for CI/CD)**
 
 ```bash
-export MELDOC_PROJECT=my-docs
-export MELDOC_SERVER=http://localhost:8089
+export MELDOC_SERVER=https://api.meldoc.io
 export MELDOC_TOKEN=your-secret-token
 
 meldoc init
 meldoc publish
 ```
 
-**Option 3: Project config** (after `meldoc init`, stored in `.meldoc/config.yml`)
+**Option 3: After `meldoc init`** (token can be set via environment)
 
 ```bash
-# Only token needed for publish/pull
-meldoc publish --token YOUR_TOKEN
+export MELDOC_TOKEN=YOUR_TOKEN
+meldoc publish
+meldoc pull
 ```
