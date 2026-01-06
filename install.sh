@@ -477,6 +477,10 @@ if ! is_in_path "$TARGET_DIR"; then
             echo ""
         else
             log_info "PATH already configured in ${shell_rc}"
+            echo ""
+            echo "If meldoc is not found, run:"
+            echo "  source ${shell_rc}"
+            echo ""
         fi
     elif [[ "$NO_PATH_HINT" -eq 0 ]]; then
         # Show manual instructions
