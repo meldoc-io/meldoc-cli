@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Meldoc CLI Installer (macOS/Linux)
-# Usage: curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.sh | bash
+# Usage: curl -fsSL https://meldoc.io/install.sh | bash
 #
 # Options:
 #   --global              Install system-wide (may require sudo)
@@ -16,11 +16,12 @@
 set -euo pipefail
 
 # ============================================================================
-# Configuration
+# Configuration - CHANGE THESE FOR YOUR PROJECT
 # ============================================================================
 TOOL_NAME="meldoc"
-RELEASES_REPO="meldoc-io/meldoc-cli"
-BASE_URL="https://raw.githubusercontent.com/${RELEASES_REPO}/main"
+GITHUB_REPO="meldoc-io/meldoc-cli"  # GitHub repository (owner/repo)
+GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}"
+GITHUB_RELEASES="https://github.com/${GITHUB_REPO}/releases"
 
 # ============================================================================
 # Arguments
@@ -40,6 +41,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # ============================================================================
@@ -56,18 +59,35 @@ log_success() {
 }
 
 log_warning() {
-    # Warnings always shown, even in quiet mode
     echo -e "${YELLOW}⚠${NC} $1"
 }
 
 log_error() {
-    # Errors always shown, even in quiet mode
     echo -e "${RED}✗${NC} $1"
 }
 
 log_output() {
     [[ "$QUIET" -eq 1 ]] && return
     echo "$1"
+}
+
+# ============================================================================
+# Banner
+# ============================================================================
+show_banner() {
+    [[ "$QUIET" -eq 1 ]] && return
+    echo -e "${CYAN}"
+    cat << 'EOF'
+                 _     _            
+  _ __ ___   ___| | __| | ___   ___ 
+ | '_ ` _ \ / _ \ |/ _` |/ _ \ / __|
+ | | | | | |  __/ | (_| | (_) | (__ 
+ |_| |_| |_|\___|_|\__,_|\___/ \___|
+                                    
+EOF
+    echo -e "${NC}"
+    echo -e "${BOLD}Meldoc CLI Installer${NC}"
+    echo ""
 }
 
 # ============================================================================
@@ -94,8 +114,8 @@ Examples:
   $0 --version v1.2.3          # Install specific version
 
 CI/CD Usage:
-  curl -fsSL <url>/install.sh | bash -s -- --quiet --force
-  curl -fsSL <url>/install.sh | bash -s -- --global --quiet
+  curl -fsSL https://meldoc.io/install.sh | bash -s -- --quiet --force
+  curl -fsSL https://meldoc.io/install.sh | bash -s -- --global --quiet
 EOF
 }
 
@@ -134,7 +154,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --quiet|-q)
             QUIET=1
-            NO_PATH_HINT=1  # Quiet mode implies no path hints
+            NO_PATH_HINT=1
             shift
             ;;
         -h|--help)
@@ -148,6 +168,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# ============================================================================
+# Show banner
+# ============================================================================
+show_banner
 
 # ============================================================================
 # Pre-flight checks
@@ -175,6 +200,13 @@ case "$OS" in
     linux)
         OS="linux"
         ;;
+    mingw*|msys*|cygwin*)
+        log_error "Windows detected. Please use PowerShell installer:"
+        echo ""
+        echo "  irm https://meldoc.io/install.ps1 | iex"
+        echo ""
+        exit 1
+        ;;
     *)
         log_error "Unsupported OS: $OS"
         exit 1
@@ -195,26 +227,33 @@ case "$ARCH" in
         ;;
 esac
 
-log_output "Platform: ${OS}/${ARCH}"
+log_output "  Platform: ${OS}/${ARCH}"
 
 # ============================================================================
-# Version resolution
+# Version resolution (using GitHub API)
 # ============================================================================
 log_info "Resolving version..."
 
 if [[ "$VERSION" == "latest" ]]; then
-    RESOLVED_VERSION=$(curl -fsSL "${BASE_URL}/LATEST" | tr -d '[:space:]' || echo "")
-    if [[ -z "$RESOLVED_VERSION" ]]; then
+    # Get latest release from GitHub API
+    RELEASE_INFO=$(curl -fsSL "${GITHUB_API}/releases/latest" 2>/dev/null || echo "")
+    
+    if [[ -z "$RELEASE_INFO" ]]; then
+        log_error "Could not fetch release information from GitHub"
+        log_output "  Please check your internet connection"
+        exit 1
+    fi
+    
+    # Extract tag_name from JSON (works without jq)
+    VERSION_TAG=$(echo "$RELEASE_INFO" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    
+    if [[ -z "$VERSION_TAG" ]]; then
         log_error "Could not determine latest version"
         exit 1
     fi
-    # Ensure version has 'v' prefix for URL path
-    if [[ "$RESOLVED_VERSION" != v* ]]; then
-        VERSION_TAG="v${RESOLVED_VERSION}"
-    else
-        VERSION_TAG="$RESOLVED_VERSION"
-        RESOLVED_VERSION="${RESOLVED_VERSION#v}"
-    fi
+    
+    # Remove 'v' prefix for artifact naming
+    RESOLVED_VERSION="${VERSION_TAG#v}"
 else
     # User provided version
     if [[ "$VERSION" == v* ]]; then
@@ -226,27 +265,24 @@ else
     fi
 fi
 
-log_output "Version: ${RESOLVED_VERSION}"
+log_output "  Version: ${VERSION_TAG}"
 
 # ============================================================================
 # Target directory resolution
 # ============================================================================
 if [[ -n "$TARGET_DIR" ]]; then
-    # Expand ~ to $HOME
     TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
 elif [[ "$GLOBAL" -eq 1 ]]; then
-    # Global install
     if [[ "$OS" == "darwin" && -d "/opt/homebrew/bin" ]]; then
         TARGET_DIR="/opt/homebrew/bin"
     else
         TARGET_DIR="/usr/local/bin"
     fi
 else
-    # Default: user-space
     TARGET_DIR="${HOME}/.local/bin"
 fi
 
-log_output "Target directory: $TARGET_DIR"
+log_output "  Install directory: $TARGET_DIR"
 
 # ============================================================================
 # Helper functions
@@ -278,16 +314,15 @@ writable_test() {
 # ============================================================================
 log_info "Preparing installation directory..."
 
-# Try to create directory without sudo first
 mkdir -p "$TARGET_DIR" 2>/dev/null || true
 
 need_sudo=0
 if writable_test "$TARGET_DIR"; then
-    log_output "Directory is writable (no sudo needed)"
+    log_output "  Directory is writable"
     need_sudo=0
 else
     if [[ "$GLOBAL" -eq 1 ]]; then
-        log_output "Directory requires elevated permissions"
+        log_output "  Directory requires elevated permissions"
         need_sudo=1
     else
         log_error "Target directory is not writable: $TARGET_DIR"
@@ -308,14 +343,14 @@ if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
     existing_ver=$("$dest" version 2>/dev/null | head -n1 || echo "unknown version")
     log_output ""
     log_warning "Already installed: $existing_ver"
-    log_output "Location: $dest"
+    log_output "  Location: $dest"
     log_output ""
-    log_output "Use --force to overwrite, or --version to install different version"
+    log_output "  Use --force to overwrite, or --version to install a different version"
     exit 0
 fi
 
 # ============================================================================
-# Download artifact
+# Download artifact from GitHub Releases
 # ============================================================================
 tmp="$(mktemp -d)"
 cleanup() {
@@ -325,16 +360,20 @@ trap cleanup EXIT
 
 # Build artifact name: meldoc-{version}-{os}-{arch}.tar.gz
 artifact="${TOOL_NAME}-${RESOLVED_VERSION}-${OS}-${ARCH}.tar.gz"
-url="${BASE_URL}/${VERSION_TAG}/${artifact}"
-checksums_url="${BASE_URL}/${VERSION_TAG}/SHA256SUMS"
 
-log_info "Downloading from: $url"
+# GitHub Releases download URL
+url="${GITHUB_RELEASES}/download/${VERSION_TAG}/${artifact}"
+
+log_info "Downloading ${TOOL_NAME} ${VERSION_TAG}..."
+log_output "  From: ${url}"
 
 if ! curl -fsSL "$url" -o "$tmp/$artifact"; then
     log_error "Download failed"
-    log_output "Please check:"
-    log_output "  - Version exists: $VERSION_TAG"
-    log_output "  - URL is accessible: $url"
+    echo ""
+    echo "Please check:"
+    echo "  - Version exists: ${VERSION_TAG}"
+    echo "  - Artifact exists: ${artifact}"
+    echo "  - Releases page: ${GITHUB_RELEASES}"
     exit 1
 fi
 
@@ -344,9 +383,13 @@ if [[ ! -s "$tmp/$artifact" ]]; then
     exit 1
 fi
 
+log_success "Downloaded successfully"
+
 # ============================================================================
 # Verify checksum (optional)
 # ============================================================================
+checksums_url="${GITHUB_RELEASES}/download/${VERSION_TAG}/SHA256SUMS"
+
 if curl -fsSL "$checksums_url" -o "$tmp/SHA256SUMS" 2>/dev/null; then
     log_info "Verifying checksum..."
     
@@ -367,8 +410,8 @@ if curl -fsSL "$checksums_url" -o "$tmp/SHA256SUMS" 2>/dev/null; then
                 log_success "Checksum verified"
             else
                 log_error "Checksum verification failed!"
-                log_output "Expected: $expected_sum"
-                log_output "Got:      $actual_sum"
+                echo "Expected: $expected_sum"
+                echo "Got:      $actual_sum"
                 exit 1
             fi
         fi
@@ -392,14 +435,12 @@ fi
 # Locate binary
 bin_path="$tmp/$TOOL_NAME"
 if [[ ! -f "$bin_path" ]]; then
-    # Fallback: search in subdirectories
     bin_path="$(find "$tmp" -maxdepth 3 -type f -name "$TOOL_NAME" 2>/dev/null | head -n 1 || true)"
 fi
 
 if [[ -z "$bin_path" || ! -f "$bin_path" ]]; then
     log_error "Binary not found after extraction"
     log_output "Expected: $TOOL_NAME"
-    log_output "Extracted contents:"
     [[ "$QUIET" -eq 0 ]] && ls -la "$tmp"
     exit 1
 fi
@@ -412,13 +453,13 @@ dest_new="${TARGET_DIR}/${TOOL_NAME}.new.$$"
 log_info "Installing binary..."
 
 if [[ "$need_sudo" -eq 1 ]]; then
-    log_output "Installing to (requires sudo): $dest"
+    log_output "  Installing to (requires sudo): $dest"
     sudo mkdir -p "$TARGET_DIR"
     sudo cp "$bin_path" "$dest_new"
     sudo chmod 755 "$dest_new"
     sudo mv -f "$dest_new" "$dest"
 else
-    log_output "Installing to: $dest"
+    log_output "  Installing to: $dest"
     cp "$bin_path" "$dest_new"
     chmod 755 "$dest_new"
     mv -f "$dest_new" "$dest"
@@ -430,17 +471,15 @@ fi
 installed_ver=$("$dest" version 2>/dev/null || echo "unknown")
 
 if [[ "$QUIET" -eq 1 ]]; then
-    # In quiet mode, just output the path for CI/CD parsing
     echo "$dest"
 else
     echo ""
-    log_success "Installation successful!"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}${BOLD}  ✓ Installation successful!${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo "Location: $dest"
-    echo "Version:  $installed_ver"
-    echo ""
-    echo "Verify installation:"
-    echo "  $TOOL_NAME --version"
+    echo "  Location: $dest"
+    echo "  Version:  $installed_ver"
     echo ""
 fi
 
@@ -448,7 +487,6 @@ fi
 # PATH setup / guidance
 # ============================================================================
 if ! is_in_path "$TARGET_DIR"; then
-    # Detect shell config file
     shell_rc=""
     if [[ "$SHELL" == *"zsh"* ]]; then
         shell_rc="$HOME/.zshrc"
@@ -458,63 +496,75 @@ if ! is_in_path "$TARGET_DIR"; then
         elif [[ -f "$HOME/.bash_profile" ]]; then
             shell_rc="$HOME/.bash_profile"
         fi
+    elif [[ "$SHELL" == *"fish"* ]]; then
+        shell_rc="$HOME/.config/fish/config.fish"
     fi
     
     path_export="export PATH=\"${TARGET_DIR}:\$PATH\""
+    fish_path_export="fish_add_path ${TARGET_DIR}"
     
     if [[ "$SETUP_PATH" -eq 1 && -n "$shell_rc" ]]; then
-        # Auto-setup PATH
         if ! grep -q "${TARGET_DIR}" "$shell_rc" 2>/dev/null; then
             echo "" >> "$shell_rc"
             echo "# Added by meldoc installer" >> "$shell_rc"
-            echo "$path_export" >> "$shell_rc"
+            if [[ "$SHELL" == *"fish"* ]]; then
+                echo "$fish_path_export" >> "$shell_rc"
+            else
+                echo "$path_export" >> "$shell_rc"
+            fi
             log_success "Added ${TARGET_DIR} to PATH in ${shell_rc}"
             echo ""
-            echo "To apply changes, run:"
-            echo "  source ${shell_rc}"
+            echo "  To apply changes, run:"
+            echo "    source ${shell_rc}"
             echo ""
-            echo "Or open a new terminal."
+            echo "  Or open a new terminal."
             echo ""
         else
             log_info "PATH already configured in ${shell_rc}"
             echo ""
-            echo "If meldoc is not found, run:"
-            echo "  source ${shell_rc}"
+            echo "  If meldoc is not found, run:"
+            echo "    source ${shell_rc}"
             echo ""
         fi
     elif [[ "$NO_PATH_HINT" -eq 0 ]]; then
-        # Show manual instructions
         log_warning "PATH configuration needed"
         echo ""
-        echo "Run this command to configure PATH:"
+        echo "  Run this command to configure PATH:"
         if [[ -n "$shell_rc" ]]; then
-            echo "  echo '$path_export' >> ${shell_rc} && source ${shell_rc}"
+            if [[ "$SHELL" == *"fish"* ]]; then
+                echo "    echo '$fish_path_export' >> ${shell_rc}"
+            else
+                echo "    echo '$path_export' >> ${shell_rc} && source ${shell_rc}"
+            fi
         else
-            echo "  $path_export"
+            echo "    $path_export"
         fi
         echo ""
-        echo "Or use --setup-path flag to configure automatically:"
-        echo "  curl -fsSL <url>/install.sh | bash -s -- --setup-path"
+        echo "  Or use --setup-path flag to configure automatically:"
+        echo "    curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path"
         echo ""
     fi
 fi
 
 # ============================================================================
-# Uninstall hint (only in non-quiet mode)
+# Final hints
 # ============================================================================
 if [[ "$QUIET" -eq 0 ]]; then
-    echo "Uninstall:"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "  🚀 Get started:"
+    echo "     $ meldoc --help"
+    echo "     $ meldoc init"
+    echo ""
+    echo "  📚 Documentation:"
+    echo "     https://public.meldoc.io/meldoc/cli"
+    echo ""
+    echo "  🗑️  Uninstall:"
     if [[ "$need_sudo" -eq 1 ]]; then
-        echo "  sudo rm $dest"
+        echo "     sudo rm $dest"
     else
-        echo "  rm $dest"
+        echo "     rm $dest"
     fi
     echo ""
-
-    echo "🚀 Get started:"
-    echo "  $ meldoc --help"
-    echo "  $ meldoc init"
-    echo ""
-    echo "📚 Documentation: https://public.meldoc.io/meldoc/cli"
-    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 fi

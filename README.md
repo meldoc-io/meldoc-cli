@@ -3,29 +3,42 @@ title: Install guide
 ---
 # meldoc CLI
 
-Binary releases for meldoc CLI.
+Documentation-as-code CLI tool for the Meldoc.io platform.
 
-## 🚀 Quick Install
+## 🚀 Install in 10 seconds
 
-**Linux / macOS:**
+### Native Install (Recommended)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.sh | bash
-```
-
-**With automatic PATH setup:**
+**macOS, Linux, WSL:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.sh | bash -s -- --setup-path
+curl -fsSL https://meldoc.io/install.sh | bash
 ```
 
-**Windows (PowerShell):**
+**Windows PowerShell:**
 
 ```powershell
-irm https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.ps1 | iex
+irm https://meldoc.io/install.ps1 | iex
 ```
 
-### Installation Options
+**Windows CMD:**
+
+```cmd
+curl -fsSL https://meldoc.io/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
+### Start using meldoc:
+
+```bash
+cd your-project
+meldoc init --token YOUR_TOKEN
+```
+
+You'll be guided through the setup process. That's it!
+
+---
+
+## 📖 Installation Options
 
 | Flag | Description |
 |------|-------------|
@@ -36,12 +49,56 @@ irm https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.ps1 | ie
 | `--force` | Overwrite existing installation |
 | `--quiet` | Minimal output (for CI/CD) |
 
-### CI/CD Installation
+### Examples
 
 ```bash
-curl -fsSL .../install.sh | bash -s -- --quiet --force
-export PATH="$HOME/.local/bin:$PATH"
+# Install specific version
+curl -fsSL https://meldoc.io/install.sh | bash -s -- --version v1.0.1
+
+# Global installation
+curl -fsSL https://meldoc.io/install.sh | bash -s -- --global
+
+# Auto-setup PATH
+curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path
+
+# Custom directory
+curl -fsSL https://meldoc.io/install.sh | bash -s -- --dir ~/bin
 ```
+
+---
+
+## 🔧 CI/CD Installation
+
+**GitHub Actions:**
+
+```yaml
+- name: Install meldoc
+  run: curl -fsSL https://meldoc.io/install.sh | bash -s -- --quiet --force
+
+- name: Publish docs
+  run: |
+    export PATH="$HOME/.local/bin:$PATH"
+    meldoc publish --token ${{ secrets.MELDOC_TOKEN }}
+```
+
+**GitLab CI:**
+
+```yaml
+publish-docs:
+  script:
+    - curl -fsSL https://meldoc.io/install.sh | bash -s -- --quiet --force
+    - export PATH="$HOME/.local/bin:$PATH"
+    - meldoc publish --token $MELDOC_TOKEN
+```
+
+**Windows CI (PowerShell):**
+
+```powershell
+irm https://meldoc.io/install.ps1 | iex -Quiet -Force
+meldoc publish --token $env:MELDOC_TOKEN
+```
+
+---
 
 ## 🚀 Quick Start
 
@@ -81,25 +138,27 @@ EOF
 meldoc scan
 
 # Publish to server
-meldoc publish --token YOUR_TOKEN
+meldoc publish
 ```
 
-**For detailed guide, see:** [QUICK_START.md](https://github.com/meldoc-io/meldoc-cli/blob/main/QUICK_START.md)
+---
 
 ## 🔄 Update
 
 To update to the latest version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/install.sh | bash -s -- --force
+curl -fsSL https://meldoc.io/install.sh | bash -s -- --force
 ```
+
+---
 
 ## 🗑️ Uninstall
 
 **Quick uninstall:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/uninstall.sh | bash
+curl -fsSL https://meldoc.io/uninstall.sh | bash
 ```
 
 **Manual uninstall:**
@@ -110,46 +169,110 @@ rm ~/.local/bin/meldoc
 
 # Global installation
 sudo rm /usr/local/bin/meldoc
+
+# Windows
+del %LOCALAPPDATA%\Programs\meldoc\bin\meldoc.exe
 ```
 
-## 📦 Available Versions
+---
 
-- **Latest:** See [LATEST](LATEST)
-- **All versions:** See [index.json](index.json)
+## 📦 Manual Download
 
-## 📥 Manual Download
+If you prefer manual installation, download from [GitHub Releases](https://github.com/meldoc-io/meldoc-cli/releases):
 
-You can also download specific versions manually from the version directories:
+| Platform | Architecture | File |
+|----------|--------------|------|
+| macOS | Intel | `meldoc-X.Y.Z-darwin-amd64.tar.gz` |
+| macOS | Apple Silicon | `meldoc-X.Y.Z-darwin-arm64.tar.gz` |
+| Linux | x86_64 | `meldoc-X.Y.Z-linux-amd64.tar.gz` |
+| Linux | ARM64 | `meldoc-X.Y.Z-linux-arm64.tar.gz` |
+| Windows | x86_64 | `meldoc-X.Y.Z-windows-amd64.zip` |
+| Windows | ARM64 | `meldoc-X.Y.Z-windows-arm64.zip` |
 
+### Manual Installation Steps
+
+```bash
+# Download (example for macOS ARM64)
+curl -LO https://github.com/meldoc-io/meldoc-cli/releases/latest/download/meldoc-1.0.1-darwin-arm64.tar.gz
+
+# Extract
+tar -xzf meldoc-1.0.1-darwin-arm64.tar.gz
+
+# Move to PATH
+mv meldoc ~/.local/bin/
+
+# Verify
+meldoc --version
 ```
-v1.0.0/
-  ├── meldoc-1.0.0-linux-amd64.tar.gz
-  ├── meldoc-1.0.0-linux-arm64.tar.gz
-  ├── meldoc-1.0.0-darwin-amd64.tar.gz
-  ├── meldoc-1.0.0-darwin-arm64.tar.gz
-  ├── meldoc-1.0.0-windows-amd64.zip
-  ├── meldoc-1.0.0-windows-arm64.zip
-  └── SHA256SUMS
-```
+
+---
 
 ## 🔐 Verify Checksums
 
 After downloading, verify the checksum:
 
 ```bash
-# Download the checksum file
-curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/v1.0.0/SHA256SUMS > SHA256SUMS
+# Download checksum file
+curl -LO https://github.com/meldoc-io/meldoc-cli/releases/latest/download/SHA256SUMS
 
-# Verify (Linux/macOS)
+# Verify (Linux)
 sha256sum -c SHA256SUMS --ignore-missing
-# or
+
+# Verify (macOS)
 shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
+---
+
+## 🛠️ Commands Reference
+
+```bash
+# Initialize project
+meldoc init --token <token>
+
+# Scan documentation files
+meldoc scan
+
+# Publish to server
+meldoc publish
+
+# Pull updates from server
+meldoc pull
+
+# Track files
+meldoc track <pattern>
+
+# Validate configuration
+meldoc validate
+
+# Check version
+meldoc version
+
+# Get help
+meldoc help
+meldoc <command> --help
+```
+
+### Configuration
+
+**Environment variables (recommended for CI/CD):**
+
+```bash
+export MELDOC_SERVER=https://api.meldoc.io
+export MELDOC_TOKEN=your-secret-token
+
+meldoc publish
+```
+
+---
+
 ## 📚 Documentation
 
-- [Source Repository](https://github.com/meldoc-io/meldoc-cli)
-- [Report Issues](https://github.com/meldoc-io/meldoc-cli/issues)
+- **Full Documentation:** [public.meldoc.io/meldoc/cli](https://public.meldoc.io/meldoc/cli)
+- **Source Repository:** [github.com/meldoc-io/meldoc-cli](https://github.com/meldoc-io/meldoc-cli)
+- **Report Issues:** [github.com/meldoc-io/meldoc-cli/issues](https://github.com/meldoc-io/meldoc-cli/issues)
+
+---
 
 ## 📄 License
 
@@ -163,52 +286,3 @@ This software is proprietary and confidential. See [LICENSE](LICENSE) for full t
 - ❌ No commercial use outside of Meldoc.io platform
 
 For licensing questions: <legal@meldoc.io>
-
-## 🛠️ Commands
-
-```bash
-# Initialize project
-meldoc init --token <token>
-
-# Scan documentation files
-meldoc scan
-
-# Publish to server
-meldoc publish --token <token>
-
-# Pull updates from server
-meldoc pull --token <token>
-
-# Check version
-meldoc version
-
-# Get help
-meldoc help
-```
-
-### Configuration Options
-
-**Option 1: Command-line flags**
-
-```bash
-meldoc init --token YOUR_TOKEN
-meldoc publish --token YOUR_TOKEN
-```
-
-**Option 2: Environment variables (recommended for CI/CD)**
-
-```bash
-export MELDOC_SERVER=https://api.meldoc.io
-export MELDOC_TOKEN=your-secret-token
-
-meldoc init
-meldoc publish
-```
-
-**Option 3: After `meldoc init`** (token can be set via environment)
-
-```bash
-export MELDOC_TOKEN=YOUR_TOKEN
-meldoc publish
-meldoc pull
-```

@@ -4,7 +4,7 @@
     Meldoc CLI Installer for Windows
 
 .DESCRIPTION
-    Downloads and installs Meldoc CLI binary for Windows.
+    Downloads and installs Meldoc CLI binary from GitHub Releases.
 
 .PARAMETER Global
     Install system-wide (requires Administrator privileges)
@@ -25,7 +25,7 @@
     Minimal output (for CI/CD)
 
 .EXAMPLE
-    .\install.ps1
+    irm https://meldoc.io/install.ps1 | iex
     Install to user directory
 
 .EXAMPLE
@@ -50,11 +50,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 # ============================================================================
-# Configuration
+# Configuration - CHANGE THESE FOR YOUR PROJECT
 # ============================================================================
 $ToolName = "meldoc"
-$ReleasesRepo = "meldoc-io/meldoc-cli"
-$BaseUrl = "https://raw.githubusercontent.com/$ReleasesRepo/main"
+$GitHubRepo = "meldoc-io/meldoc-cli"
+$GitHubApi = "https://api.github.com/repos/$GitHubRepo"
+$GitHubReleases = "https://github.com/$GitHubRepo/releases"
 
 # ============================================================================
 # Logging functions
@@ -75,14 +76,12 @@ function Write-Success {
 
 function Write-Warn {
     param([string]$Message)
-    # Warnings always shown, even in quiet mode
     Write-Host "⚠ " -ForegroundColor Yellow -NoNewline
     Write-Host $Message
 }
 
 function Write-Err {
     param([string]$Message)
-    # Errors always shown, even in quiet mode
     Write-Host "✗ " -ForegroundColor Red -NoNewline
     Write-Host $Message
 }
@@ -115,19 +114,26 @@ function Test-InPath([string]$Path) {
 }
 
 # ============================================================================
-# Pre-flight Checks
+# Banner
 # ============================================================================
 if (-not $Quiet) {
     Write-Host ""
-    Write-Host "╔═══════════════════════════════════════╗"
-    Write-Host "║     Meldoc CLI Installer              ║"
-    Write-Host "╚═══════════════════════════════════════╝"
+    Write-Host "                 _     _            " -ForegroundColor Cyan
+    Write-Host "  _ __ ___   ___| | __| | ___   ___ " -ForegroundColor Cyan
+    Write-Host " | '_ `` _ \ / _ \ |/ _`` |/ _ \ / __|" -ForegroundColor Cyan
+    Write-Host " | | | | | |  __/ | (_| | (_) | (__ " -ForegroundColor Cyan
+    Write-Host " |_| |_| |_|\___|_|\__,_|\___/ \___|" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Meldoc CLI Installer" -ForegroundColor White
     Write-Host ""
 }
 
 # Quiet mode implies no path hints
 if ($Quiet) { $NoPathHint = $true }
 
+# ============================================================================
+# Pre-flight Checks
+# ============================================================================
 Write-Info "Checking prerequisites..."
 
 # Check PowerShell version
@@ -164,31 +170,33 @@ $Arch = switch ($env:PROCESSOR_ARCHITECTURE) {
     }
 }
 
-Write-Output-Msg "Platform: $OS/$Arch"
+Write-Output-Msg "  Platform: $OS/$Arch"
 
 # ============================================================================
-# Version Resolution
+# Version Resolution (using GitHub API)
 # ============================================================================
 Write-Info "Resolving version..."
 
 if ($Version -eq "latest") {
     try {
-        $ResolvedVersion = (Invoke-WebRequest -Uri "$BaseUrl/LATEST" -UseBasicParsing).Content.Trim()
-        if ([string]::IsNullOrWhiteSpace($ResolvedVersion)) {
-            throw "Empty version"
+        # Get latest release from GitHub API
+        $headers = @{
+            "Accept" = "application/vnd.github.v3+json"
+            "User-Agent" = "MeldocInstaller"
         }
+        
+        $releaseInfo = Invoke-RestMethod -Uri "$GitHubApi/releases/latest" -Headers $headers -UseBasicParsing
+        $VersionTag = $releaseInfo.tag_name
+        
+        if ([string]::IsNullOrWhiteSpace($VersionTag)) {
+            throw "Could not determine latest version"
+        }
+        
+        $ResolvedVersion = $VersionTag.TrimStart('v')
     }
     catch {
-        Write-Err "Could not determine latest version: $_"
+        Write-Err "Could not fetch release information from GitHub: $_"
         exit 1
-    }
-    
-    # Ensure version tag has 'v' prefix
-    if ($ResolvedVersion -notmatch '^v') {
-        $VersionTag = "v$ResolvedVersion"
-    } else {
-        $VersionTag = $ResolvedVersion
-        $ResolvedVersion = $ResolvedVersion.TrimStart('v')
     }
 } else {
     if ($Version -match '^v') {
@@ -200,7 +208,7 @@ if ($Version -eq "latest") {
     }
 }
 
-Write-Output-Msg "Version: $ResolvedVersion"
+Write-Output-Msg "  Version: $VersionTag"
 
 # ============================================================================
 # Target Directory Resolution
@@ -213,7 +221,7 @@ if ($Dir -ne "") {
     $TargetDir = Join-Path $env:LOCALAPPDATA "Programs\$ToolName\bin"
 }
 
-Write-Output-Msg "Target directory: $TargetDir"
+Write-Output-Msg "  Install directory: $TargetDir"
 
 # ============================================================================
 # Check Existing Installation
@@ -228,14 +236,14 @@ if ((Test-Path $DestPath) -and !$Force) {
     
     Write-Output-Msg ""
     Write-Warn "Already installed: $existingVer"
-    Write-Output-Msg "Location: $DestPath"
+    Write-Output-Msg "  Location: $DestPath"
     Write-Output-Msg ""
-    Write-Output-Msg "Use -Force to overwrite, or -Version to install different version"
+    Write-Output-Msg "  Use -Force to overwrite, or -Version to install different version"
     exit 0
 }
 
 # ============================================================================
-# Download Artifact
+# Download Artifact from GitHub Releases
 # ============================================================================
 $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) "meldoc-install-$([System.Guid]::NewGuid().ToString('N'))"
 Ensure-Dir $TempDir
@@ -243,22 +251,27 @@ Ensure-Dir $TempDir
 try {
     # Build artifact name: meldoc-{version}-windows-{arch}.zip
     $Artifact = "$ToolName-$ResolvedVersion-$OS-$Arch.zip"
-    $Url = "$BaseUrl/$VersionTag/$Artifact"
-    $ChecksumsUrl = "$BaseUrl/$VersionTag/SHA256SUMS"
+    
+    # GitHub Releases download URL
+    $Url = "$GitHubReleases/download/$VersionTag/$Artifact"
+    $ChecksumsUrl = "$GitHubReleases/download/$VersionTag/SHA256SUMS"
 
-    Write-Info "Downloading from: $Url"
+    Write-Info "Downloading $ToolName $VersionTag..."
+    Write-Output-Msg "  From: $Url"
     
     $ArtifactPath = Join-Path $TempDir $Artifact
     
     try {
-        $ProgressPreference = 'SilentlyContinue' # Faster download
+        $ProgressPreference = 'SilentlyContinue'
         Invoke-WebRequest -Uri $Url -OutFile $ArtifactPath -UseBasicParsing
         $ProgressPreference = 'Continue'
     } catch {
         Write-Err "Download failed"
+        Write-Host ""
         Write-Host "Please check:"
         Write-Host "  - Version exists: $VersionTag"
-        Write-Host "  - URL is accessible: $Url"
+        Write-Host "  - Artifact exists: $Artifact"
+        Write-Host "  - Releases page: $GitHubReleases"
         Write-Host ""
         Write-Host "Error: $_"
         exit 1
@@ -269,6 +282,8 @@ try {
         Write-Err "Downloaded file is empty or doesn't exist"
         exit 1
     }
+    
+    Write-Success "Downloaded successfully"
 
     # ============================================================================
     # Verify Checksum (optional)
@@ -355,17 +370,15 @@ try {
     } catch {}
     
     if ($Quiet) {
-        # In quiet mode, just output the path for CI/CD parsing
         Write-Host $DestPath
     } else {
         Write-Host ""
-        Write-Success "Installation successful!"
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
+        Write-Host "  ✓ Installation successful!" -ForegroundColor Green
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
         Write-Host ""
-        Write-Host "Location: $DestPath"
-        Write-Host "Version:  $installedVer"
-        Write-Host ""
-        Write-Host "Verify installation:"
-        Write-Host "  $ToolName --version"
+        Write-Host "  Location: $DestPath"
+        Write-Host "  Version:  $installedVer"
         Write-Host ""
     }
 
@@ -378,38 +391,41 @@ try {
             Write-Host ""
             
             if ($Global) {
-                Write-Host "Add to system PATH (requires admin PowerShell):" -ForegroundColor Yellow
-                Write-Host "  [System.Environment]::SetEnvironmentVariable('PATH', `$env:PATH + ';$TargetDir', 'Machine')"
+                Write-Host "  Add to system PATH (requires admin PowerShell):" -ForegroundColor Yellow
+                Write-Host "    [System.Environment]::SetEnvironmentVariable('PATH', `$env:PATH + ';$TargetDir', 'Machine')"
             } else {
-                Write-Host "Add to user PATH:" -ForegroundColor Yellow
-                Write-Host "  [System.Environment]::SetEnvironmentVariable('PATH', `$env:PATH + ';$TargetDir', 'User')"
+                Write-Host "  Add to user PATH:" -ForegroundColor Yellow
+                Write-Host "    [System.Environment]::SetEnvironmentVariable('PATH', `$env:PATH + ';$TargetDir', 'User')"
             }
             
             Write-Host ""
-            Write-Host "Or manually:" -ForegroundColor Yellow
-            Write-Host "  1. Open: sysdm.cpl"
-            Write-Host "  2. Advanced -> Environment Variables"
-            Write-Host "  3. Add to PATH: $TargetDir"
+            Write-Host "  Or manually:" -ForegroundColor Yellow
+            Write-Host "    1. Open: sysdm.cpl"
+            Write-Host "    2. Advanced -> Environment Variables"
+            Write-Host "    3. Add to PATH: $TargetDir"
             Write-Host ""
-            Write-Host "Then restart PowerShell for changes to take effect"
+            Write-Host "  Then restart PowerShell for changes to take effect"
             Write-Host ""
         }
     }
 
     # ============================================================================
-    # Uninstall Hint (only in non-quiet mode)
+    # Final Hints
     # ============================================================================
     if (-not $Quiet) {
-        Write-Host "Uninstall:"
-        Write-Host "  Remove-Item '$DestPath'"
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
         Write-Host ""
-
-        Write-Host "🚀 Get started:"
-        Write-Host "  PS> meldoc --help"
-        Write-Host "  PS> meldoc init"
+        Write-Host "  🚀 Get started:"
+        Write-Host "     PS> meldoc --help"
+        Write-Host "     PS> meldoc init"
         Write-Host ""
-        Write-Host "📚 Documentation: https://public.meldoc.io/meldoc/cli"
+        Write-Host "  📚 Documentation:"
+        Write-Host "     https://public.meldoc.io/meldoc/cli"
         Write-Host ""
+        Write-Host "  🗑️  Uninstall:"
+        Write-Host "     Remove-Item '$DestPath'"
+        Write-Host ""
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
     }
 
 } finally {

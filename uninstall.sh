@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Meldoc CLI Uninstaller (macOS/Linux)
-# Usage: curl -fsSL https://raw.githubusercontent.com/meldoc-io/meldoc-cli/main/uninstall.sh | bash
+# Usage: curl -fsSL https://meldoc.io/uninstall.sh | bash
 #
 
 set -euo pipefail
