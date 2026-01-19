@@ -1,0 +1,73 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check artifacts exist
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if [ ! -d "$VERSION" ]; then
+            echo "Error: Directory $VERSION not found"
+            echo "Available directories:"
+            ls -la
+            exit 1
+          fi
+          echo "Found artifacts in $VERSION:"
+          ls -la "$VERSION"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ steps.version.outputs.version }}/*.tar.gz
+            ${{ steps.version.outputs.version }}/*.zip
+            ${{ steps.version.outputs.version }}/SHA256SUMS
+          body: |
+            ## Installation
+
+            **macOS, Linux, WSL:**
+            ```bash
+            curl -fsSL https://meldoc.io/install.sh | bash
+            ```
+
+            **Windows PowerShell:**
+            ```powershell
+            irm https://meldoc.io/install.ps1 | iex
+            ```
+
+            **Windows CMD:**
+            ```cmd
+            curl -fsSL https://meldoc.io/install.cmd -o install.cmd && install.cmd && del install.cmd
+            ```
+
+            ## Checksums
+
+            See `SHA256SUMS` file for checksums.
+
+            ## Documentation
+
+            https://public.meldoc.io/meldoc/cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
