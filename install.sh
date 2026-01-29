@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Meldoc CLI Installer (macOS/Linux)
+# Meldoc CLI Installer (macOS/Linux/Windows Git Bash)
 # Usage: curl -fsSL https://meldoc.io/install.sh | bash
 #
 # Options:
@@ -179,21 +179,25 @@ show_banner
 # ============================================================================
 log_info "Checking dependencies..."
 
-for cmd in curl tar; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        log_error "Required command not found: $cmd"
-        echo "Please install it using your package manager."
-        exit 1
-    fi
-done
+# Check for curl (required)
+if ! command -v curl >/dev/null 2>&1; then
+    log_error "Required command not found: curl"
+    echo "Please install it using your package manager."
+    exit 1
+fi
+
+# Check for tar or unzip (depending on platform)
+# We'll check this after platform detection
 
 # ============================================================================
 # Platform detection
 # ============================================================================
 log_info "Detecting platform..."
 
-OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-case "$OS" in
+UNAME_OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+IS_WINDOWS=0
+
+case "$UNAME_OS" in
     darwin)
         OS="darwin"
         ;;
@@ -201,33 +205,96 @@ case "$OS" in
         OS="linux"
         ;;
     mingw*|msys*|cygwin*)
-        log_error "Windows detected. Please use PowerShell installer:"
-        echo ""
-        echo "  irm https://meldoc.io/install.ps1 | iex"
-        echo ""
-        exit 1
+        # Windows detected (Git Bash, MSYS2, or Cygwin)
+        OS="windows"
+        IS_WINDOWS=1
         ;;
     *)
-        log_error "Unsupported OS: $OS"
+        log_error "Unsupported OS: $UNAME_OS"
         exit 1
         ;;
 esac
 
-ARCH="$(uname -m)"
-case "$ARCH" in
-    x86_64|amd64)
-        ARCH="amd64"
-        ;;
-    arm64|aarch64)
-        ARCH="arm64"
-        ;;
-    *)
-        log_error "Unsupported architecture: $ARCH"
-        exit 1
-        ;;
-esac
+# Architecture detection
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    # On Windows, try to detect architecture from environment or uname
+    # Git Bash may report x86_64 even on ARM systems, so check environment first
+    if [[ -n "${PROCESSOR_ARCHITECTURE:-}" ]]; then
+        case "${PROCESSOR_ARCHITECTURE}" in
+            AMD64)
+                ARCH="amd64"
+                ;;
+            ARM64)
+                ARCH="arm64"
+                ;;
+            *)
+                # Fallback to uname
+                UNAME_ARCH="$(uname -m)"
+                case "$UNAME_ARCH" in
+                    x86_64|amd64)
+                        ARCH="amd64"
+                        ;;
+                    arm64|aarch64)
+                        ARCH="arm64"
+                        ;;
+                    *)
+                        log_error "Unsupported architecture: $UNAME_ARCH"
+                        exit 1
+                        ;;
+                esac
+                ;;
+        esac
+    else
+        # Fallback to uname
+        UNAME_ARCH="$(uname -m)"
+        case "$UNAME_ARCH" in
+            x86_64|amd64)
+                ARCH="amd64"
+                ;;
+            arm64|aarch64)
+                ARCH="arm64"
+                ;;
+            *)
+                log_error "Unsupported architecture: $UNAME_ARCH"
+                exit 1
+                ;;
+        esac
+    fi
+else
+    # Unix-like systems
+    UNAME_ARCH="$(uname -m)"
+    case "$UNAME_ARCH" in
+        x86_64|amd64)
+            ARCH="amd64"
+            ;;
+        arm64|aarch64)
+            ARCH="arm64"
+            ;;
+        *)
+            log_error "Unsupported architecture: $UNAME_ARCH"
+            exit 1
+            ;;
+    esac
+fi
 
 log_output "  Platform: ${OS}/${ARCH}"
+
+# Check for required extraction tool
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    if ! command -v unzip >/dev/null 2>&1; then
+        log_error "Required command not found: unzip"
+        echo "Please install unzip. On Windows, you can use:"
+        echo "  - Git Bash (usually includes unzip)"
+        echo "  - Or use PowerShell installer: irm https://meldoc.io/install.ps1 | iex"
+        exit 1
+    fi
+else
+    if ! command -v tar >/dev/null 2>&1; then
+        log_error "Required command not found: tar"
+        echo "Please install it using your package manager."
+        exit 1
+    fi
+fi
 
 # ============================================================================
 # Version resolution (using GitHub API)
@@ -273,13 +340,29 @@ log_output "  Version: ${VERSION_TAG}"
 if [[ -n "$TARGET_DIR" ]]; then
     TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
 elif [[ "$GLOBAL" -eq 1 ]]; then
-    if [[ "$OS" == "darwin" && -d "/opt/homebrew/bin" ]]; then
+    if [[ "$IS_WINDOWS" -eq 1 ]]; then
+        # Windows: use Program Files for global install
+        if [[ -n "${ProgramFiles:-}" ]]; then
+            TARGET_DIR="${ProgramFiles}/meldoc/bin"
+        else
+            TARGET_DIR="/c/Program Files/meldoc/bin"
+        fi
+    elif [[ "$OS" == "darwin" && -d "/opt/homebrew/bin" ]]; then
         TARGET_DIR="/opt/homebrew/bin"
     else
         TARGET_DIR="/usr/local/bin"
     fi
 else
-    TARGET_DIR="${HOME}/.local/bin"
+    if [[ "$IS_WINDOWS" -eq 1 ]]; then
+        # Windows: use LOCALAPPDATA or fallback to ~/.local/bin
+        if [[ -n "${LOCALAPPDATA:-}" ]]; then
+            TARGET_DIR="${LOCALAPPDATA}/Programs/meldoc/bin"
+        else
+            TARGET_DIR="${HOME}/.local/bin"
+        fi
+    else
+        TARGET_DIR="${HOME}/.local/bin"
+    fi
 fi
 
 log_output "  Install directory: $TARGET_DIR"
@@ -337,7 +420,11 @@ fi
 # ============================================================================
 # Check existing installation
 # ============================================================================
-dest="${TARGET_DIR}/${TOOL_NAME}"
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    dest="${TARGET_DIR}/${TOOL_NAME}.exe"
+else
+    dest="${TARGET_DIR}/${TOOL_NAME}"
+fi
 
 if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
     existing_ver=$("$dest" version 2>/dev/null | head -n1 || echo "unknown version")
@@ -358,8 +445,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Build artifact name: meldoc-{version}-{os}-{arch}.tar.gz
-artifact="${TOOL_NAME}-${RESOLVED_VERSION}-${OS}-${ARCH}.tar.gz"
+# Build artifact name based on platform
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    artifact="${TOOL_NAME}-${RESOLVED_VERSION}-${OS}-${ARCH}.zip"
+else
+    artifact="${TOOL_NAME}-${RESOLVED_VERSION}-${OS}-${ARCH}.tar.gz"
+fi
 
 # GitHub Releases download URL
 url="${GITHUB_RELEASES}/download/${VERSION_TAG}/${artifact}"
@@ -427,28 +518,54 @@ fi
 # ============================================================================
 log_info "Extracting archive..."
 
-if ! tar -xzf "$tmp/$artifact" -C "$tmp"; then
-    log_error "Failed to extract archive"
-    exit 1
-fi
-
-# Locate binary
-bin_path="$tmp/$TOOL_NAME"
-if [[ ! -f "$bin_path" ]]; then
-    bin_path="$(find "$tmp" -maxdepth 3 -type f -name "$TOOL_NAME" 2>/dev/null | head -n 1 || true)"
-fi
-
-if [[ -z "$bin_path" || ! -f "$bin_path" ]]; then
-    log_error "Binary not found after extraction"
-    log_output "Expected: $TOOL_NAME"
-    [[ "$QUIET" -eq 0 ]] && ls -la "$tmp"
-    exit 1
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    # Windows: use unzip
+    if ! unzip -q "$tmp/$artifact" -d "$tmp"; then
+        log_error "Failed to extract archive"
+        exit 1
+    fi
+    
+    # Locate binary (.exe for Windows)
+    bin_path="$tmp/${TOOL_NAME}.exe"
+    if [[ ! -f "$bin_path" ]]; then
+        bin_path="$(find "$tmp" -maxdepth 3 -type f -name "${TOOL_NAME}.exe" 2>/dev/null | head -n 1 || true)"
+    fi
+    
+    if [[ -z "$bin_path" || ! -f "$bin_path" ]]; then
+        log_error "Binary not found after extraction"
+        log_output "Expected: ${TOOL_NAME}.exe"
+        [[ "$QUIET" -eq 0 ]] && ls -la "$tmp"
+        exit 1
+    fi
+else
+    # Unix-like: use tar
+    if ! tar -xzf "$tmp/$artifact" -C "$tmp"; then
+        log_error "Failed to extract archive"
+        exit 1
+    fi
+    
+    # Locate binary
+    bin_path="$tmp/$TOOL_NAME"
+    if [[ ! -f "$bin_path" ]]; then
+        bin_path="$(find "$tmp" -maxdepth 3 -type f -name "$TOOL_NAME" 2>/dev/null | head -n 1 || true)"
+    fi
+    
+    if [[ -z "$bin_path" || ! -f "$bin_path" ]]; then
+        log_error "Binary not found after extraction"
+        log_output "Expected: $TOOL_NAME"
+        [[ "$QUIET" -eq 0 ]] && ls -la "$tmp"
+        exit 1
+    fi
 fi
 
 # ============================================================================
 # Install binary (atomic)
 # ============================================================================
-dest_new="${TARGET_DIR}/${TOOL_NAME}.new.$$"
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    dest_new="${TARGET_DIR}/${TOOL_NAME}.new.$$.exe"
+else
+    dest_new="${TARGET_DIR}/${TOOL_NAME}.new.$$"
+fi
 
 log_info "Installing binary..."
 
@@ -456,12 +573,16 @@ if [[ "$need_sudo" -eq 1 ]]; then
     log_output "  Installing to (requires sudo): $dest"
     sudo mkdir -p "$TARGET_DIR"
     sudo cp "$bin_path" "$dest_new"
-    sudo chmod 755 "$dest_new"
+    if [[ "$IS_WINDOWS" -eq 0 ]]; then
+        sudo chmod 755 "$dest_new"
+    fi
     sudo mv -f "$dest_new" "$dest"
 else
     log_output "  Installing to: $dest"
     cp "$bin_path" "$dest_new"
-    chmod 755 "$dest_new"
+    if [[ "$IS_WINDOWS" -eq 0 ]]; then
+        chmod 755 "$dest_new"
+    fi
     mv -f "$dest_new" "$dest"
 fi
 
