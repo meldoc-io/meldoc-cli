@@ -337,6 +337,25 @@ log_output "  Version: ${VERSION_TAG}"
 # ============================================================================
 # Target directory resolution
 # ============================================================================
+
+# Convert Windows path (C:\Users\...) to Unix/POSIX path (/c/Users/...)
+# Required for Git Bash/MSYS2/Cygwin where env vars contain Windows paths
+to_unix_path() {
+    local p="$1"
+    if command -v cygpath >/dev/null 2>&1; then
+        cygpath -u "$p"
+    else
+        # Manual conversion: backslashes → forward slashes, drive letter → /c/
+        p="${p//\\//}"
+        if [[ "$p" =~ ^([A-Za-z]):/ ]]; then
+            local drive
+            drive="$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')"
+            p="/${drive}${p:2}"
+        fi
+        echo "$p"
+    fi
+}
+
 if [[ -n "$TARGET_DIR" ]]; then
     TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
 elif [[ "$GLOBAL" -eq 1 ]]; then
@@ -363,6 +382,13 @@ else
     else
         TARGET_DIR="${HOME}/.local/bin"
     fi
+fi
+
+# On Windows (Git Bash/MSYS2/Cygwin), environment variables like $LOCALAPPDATA
+# and $ProgramFiles contain Windows-style paths (C:\Users\...) which must be
+# converted to Unix-style (/c/Users/...) for shell config files like .bashrc
+if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    TARGET_DIR="$(to_unix_path "$TARGET_DIR")"
 fi
 
 log_output "  Install directory: $TARGET_DIR"
