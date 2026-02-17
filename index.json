@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "latest": "1.1.13",
   "versions": {
     "1.1.13": {
@@ -9,6 +10,18 @@
         "darwin/arm64": "v1.1.13/meldoc-1.1.13-darwin-arm64.tar.gz",
         "windows/amd64": "v1.1.13/meldoc-1.1.13-windows-amd64.zip",
         "windows/arm64": "v1.1.13/meldoc-1.1.13-windows-arm64.zip"
+=======
+  "latest": "1.1.14",
+  "versions": {
+    "1.1.14": {
+      "files": {
+        "linux/amd64": "v1.1.14/meldoc-1.1.14-linux-amd64.tar.gz",
+        "linux/arm64": "v1.1.14/meldoc-1.1.14-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.1.14/meldoc-1.1.14-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.1.14/meldoc-1.1.14-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.1.14/meldoc-1.1.14-windows-amd64.zip",
+        "windows/arm64": "v1.1.14/meldoc-1.1.14-windows-arm64.zip"
+>>>>>>> Stashed changes
       }
     }
   }
