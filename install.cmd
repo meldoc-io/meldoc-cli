@@ -201,16 +201,41 @@ if "%QUIET%"=="1" (
     echo   Location: %DEST_PATH%
     echo.
     
-    :: Check if in PATH
+    :: Check if in PATH and add if needed
     echo %PATH% | findstr /i /c:"%TARGET_DIR%" >nul
     if %ERRORLEVEL% neq 0 (
-        echo   [WARN] PATH configuration needed
+        echo   [INFO] Adding to PATH...
         echo.
-        echo   Add to PATH permanently:
-        echo     setx PATH "%%PATH%%;%TARGET_DIR%"
-        echo.
-        echo   Or add temporarily for this session:
-        echo     set PATH=%%PATH%%;%TARGET_DIR%
+        
+        :: Use PowerShell to modify PATH in registry (avoids setx 1024-char limit)
+        powershell -NoProfile -Command "$currentPath = [System.Environment]::GetEnvironmentVariable('PATH', 'User'); if ($null -eq $currentPath) { $currentPath = '' }; $normalizedTarget = '%TARGET_DIR%'.TrimEnd('\'); $entries = $currentPath -split ';' | ForEach-Object { $_.TrimEnd('\') }; $alreadyInPath = $entries | Where-Object { $_.ToLower() -eq $normalizedTarget.ToLower() }; if (-not $alreadyInPath) { $newPath = if ($currentPath -eq '') { '%TARGET_DIR%' } else { \"$currentPath;%TARGET_DIR%\" }; [System.Environment]::SetEnvironmentVariable('PATH', $newPath, 'User'); Write-Host '[OK] Added to user PATH' } else { Write-Host '[OK] Already in PATH' }" 2>nul
+        
+        if %ERRORLEVEL% neq 0 (
+            :: Fallback to setx if PowerShell fails
+            echo   [WARN] PowerShell method failed, trying setx...
+            echo   [WARN] Note: setx has a 1024 character limit
+            setx PATH "%PATH%;%TARGET_DIR%" >nul 2>&1
+            if %ERRORLEVEL% equ 0 (
+                echo   [OK] Added to PATH using setx
+            ) else (
+                echo   [ERROR] Failed to add to PATH automatically
+                echo.
+                echo   Please add manually:
+                echo     1. Open: sysdm.cpl
+                echo     2. Advanced -^> Environment Variables
+                echo     3. Add to PATH: %TARGET_DIR%
+                echo.
+            )
+        ) else (
+            echo.
+            echo   Note: Restart CMD or open a new terminal for changes to take effect
+            echo.
+        )
+        
+        :: Also set PATH for current session
+        set PATH=%PATH%;%TARGET_DIR%
+    ) else (
+        echo   [OK] PATH already configured
         echo.
     )
     

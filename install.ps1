@@ -44,6 +44,7 @@ param(
     [string]$Version = "latest",
     [switch]$Force,
     [switch]$NoPathHint,
+    [switch]$NoPathSetup,
     [switch]$Quiet
 )
 
@@ -383,9 +384,63 @@ try {
     }
 
     # ============================================================================
-    # PATH Guidance
+    # PATH Setup
     # ============================================================================
-    if (-not $NoPathHint) {
+    if (-not $NoPathSetup) {
+        if (-not (Test-InPath $TargetDir)) {
+            try {
+                # Get current PATH from registry (persistent, not session)
+                $scope = if ($Global) { 'Machine' } else { 'User' }
+                $currentPath = [System.Environment]::GetEnvironmentVariable('PATH', $scope)
+                
+                if ($null -eq $currentPath) {
+                    $currentPath = ""
+                }
+                
+                # Normalize paths for comparison (remove trailing backslashes)
+                $normalizedTargetDir = $TargetDir.TrimEnd('\')
+                $pathEntries = $currentPath -split ';' | ForEach-Object { $_.TrimEnd('\') }
+                
+                # Check if already in PATH (case-insensitive)
+                $alreadyInPath = $pathEntries | Where-Object { $_.ToLower() -eq $normalizedTargetDir.ToLower() }
+                
+                if (-not $alreadyInPath) {
+                    # Add to PATH
+                    $newPath = if ($currentPath -eq "") { $TargetDir } else { "$currentPath;$TargetDir" }
+                    [System.Environment]::SetEnvironmentVariable('PATH', $newPath, $scope)
+                    
+                    # Also update current session
+                    $env:PATH = "$env:PATH;$TargetDir"
+                    
+                    if (-not $Quiet) {
+                        Write-Success "Added $TargetDir to PATH ($scope scope)"
+                        Write-Host ""
+                        Write-Host "  Note: Restart PowerShell or open a new terminal for changes to take effect in other processes"
+                        Write-Host ""
+                    }
+                } else {
+                    if (-not $Quiet) {
+                        Write-Info "PATH already contains $TargetDir"
+                    }
+                }
+            } catch {
+                Write-Warn "Failed to add to PATH automatically: $_"
+                Write-Host ""
+                if (-not $NoPathHint) {
+                    Write-Host "  Please add manually:" -ForegroundColor Yellow
+                    Write-Host "    1. Open: sysdm.cpl"
+                    Write-Host "    2. Advanced -> Environment Variables"
+                    Write-Host "    3. Add to PATH: $TargetDir"
+                    Write-Host ""
+                }
+            }
+        } else {
+            if (-not $Quiet) {
+                Write-Info "PATH already configured (found in current session)"
+            }
+        }
+    } elseif (-not $NoPathHint) {
+        # Show hint if PATH setup was skipped
         if (-not (Test-InPath $TargetDir)) {
             Write-Warn "PATH configuration needed"
             Write-Host ""

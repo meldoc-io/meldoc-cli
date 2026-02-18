@@ -30,6 +30,7 @@ GLOBAL=0
 FORCE=0
 NO_PATH_HINT=0
 SETUP_PATH=0
+NO_PATH_SETUP=0
 QUIET=0
 VERSION="latest"
 TARGET_DIR=""
@@ -150,6 +151,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --setup-path)
             SETUP_PATH=1
+            shift
+            ;;
+        --no-path-setup)
+            NO_PATH_SETUP=1
             shift
             ;;
         --quiet|-q)
@@ -633,63 +638,110 @@ fi
 # ============================================================================
 # PATH setup / guidance
 # ============================================================================
+# On Windows, enable PATH setup by default (opt-out with --no-path-setup)
+if [[ "$IS_WINDOWS" -eq 1 && "$NO_PATH_SETUP" -eq 0 ]]; then
+    SETUP_PATH=1
+fi
+
 if ! is_in_path "$TARGET_DIR"; then
-    shell_rc=""
-    if [[ "$SHELL" == *"zsh"* ]]; then
-        shell_rc="$HOME/.zshrc"
-    elif [[ "$SHELL" == *"bash"* ]]; then
-        if [[ -f "$HOME/.bashrc" ]]; then
-            shell_rc="$HOME/.bashrc"
-        elif [[ -f "$HOME/.bash_profile" ]]; then
-            shell_rc="$HOME/.bash_profile"
-        fi
-    elif [[ "$SHELL" == *"fish"* ]]; then
-        shell_rc="$HOME/.config/fish/config.fish"
-    fi
-    
-    path_export="export PATH=\"${TARGET_DIR}:\$PATH\""
-    fish_path_export="fish_add_path ${TARGET_DIR}"
-    
-    if [[ "$SETUP_PATH" -eq 1 && -n "$shell_rc" ]]; then
-        if ! grep -q "${TARGET_DIR}" "$shell_rc" 2>/dev/null; then
-            echo "" >> "$shell_rc"
-            echo "# Added by meldoc installer" >> "$shell_rc"
-            if [[ "$SHELL" == *"fish"* ]]; then
-                echo "$fish_path_export" >> "$shell_rc"
-            else
-                echo "$path_export" >> "$shell_rc"
-            fi
-            log_success "Added ${TARGET_DIR} to PATH in ${shell_rc}"
-            echo ""
-            echo "  To apply changes, run:"
-            echo "    source ${shell_rc}"
-            echo ""
-            echo "  Or open a new terminal."
-            echo ""
+    # Windows PATH setup (registry-based)
+    if [[ "$IS_WINDOWS" -eq 1 && "$SETUP_PATH" -eq 1 && "$NO_PATH_SETUP" -eq 0 ]]; then
+        log_info "Setting up Windows PATH..."
+        
+        # Convert Unix-style path to Windows-style if needed
+        win_target_dir="$TARGET_DIR"
+        if command -v cygpath >/dev/null 2>&1; then
+            win_target_dir=$(cygpath -w "$TARGET_DIR" 2>/dev/null || echo "$TARGET_DIR")
         else
-            log_info "PATH already configured in ${shell_rc}"
-            echo ""
-            echo "  If meldoc is not found, run:"
-            echo "    source ${shell_rc}"
-            echo ""
+            # Manual conversion: /c/Users/... -> C:\Users\...
+            win_target_dir="${TARGET_DIR//\//\\}"
+            if [[ "$win_target_dir" =~ ^\\([a-z])\\(.*)$ ]]; then
+                drive=$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')
+                win_target_dir="${drive}:\\${BASH_REMATCH[2]}"
+            fi
         fi
-    elif [[ "$NO_PATH_HINT" -eq 0 ]]; then
-        log_warning "PATH configuration needed"
-        echo ""
-        echo "  Run this command to configure PATH:"
-        if [[ -n "$shell_rc" ]]; then
-            if [[ "$SHELL" == *"fish"* ]]; then
-                echo "    echo '$fish_path_export' >> ${shell_rc}"
-            else
-                echo "    echo '$path_export' >> ${shell_rc} && source ${shell_rc}"
+        
+        # Use PowerShell to modify Windows PATH registry
+        if powershell.exe -NoProfile -Command "\$currentPath = [System.Environment]::GetEnvironmentVariable('PATH', 'User'); if (\$null -eq \$currentPath) { \$currentPath = '' }; \$normalizedTarget = '$win_target_dir'.TrimEnd('\'); \$entries = \$currentPath -split ';' | ForEach-Object { \$_.TrimEnd('\') }; \$alreadyInPath = \$entries | Where-Object { \$_.ToLower() -eq \$normalizedTarget.ToLower() }; if (-not \$alreadyInPath) { \$newPath = if (\$currentPath -eq '') { '$win_target_dir' } else { \"\$currentPath;$win_target_dir\" }; [System.Environment]::SetEnvironmentVariable('PATH', \$newPath, 'User'); Write-Host 'OK' } else { Write-Host 'ALREADY' }" 2>/dev/null | grep -q "OK\|ALREADY"; then
+            result=$(powershell.exe -NoProfile -Command "\$currentPath = [System.Environment]::GetEnvironmentVariable('PATH', 'User'); if (\$null -eq \$currentPath) { \$currentPath = '' }; \$normalizedTarget = '$win_target_dir'.TrimEnd('\'); \$entries = \$currentPath -split ';' | ForEach-Object { \$_.TrimEnd('\') }; \$alreadyInPath = \$entries | Where-Object { \$_.ToLower() -eq \$normalizedTarget.ToLower() }; if (-not \$alreadyInPath) { \$newPath = if (\$currentPath -eq '') { '$win_target_dir' } else { \"\$currentPath;$win_target_dir\" }; [System.Environment]::SetEnvironmentVariable('PATH', \$newPath, 'User'); Write-Host 'OK' } else { Write-Host 'ALREADY' }" 2>/dev/null)
+            if echo "$result" | grep -q "OK"; then
+                log_success "Added ${TARGET_DIR} to Windows PATH"
+                echo ""
+                echo "  Note: Restart your terminal or IDE for changes to take effect"
+                echo ""
+            elif echo "$result" | grep -q "ALREADY"; then
+                log_info "PATH already contains ${TARGET_DIR}"
             fi
         else
-            echo "    $path_export"
+            log_warning "Failed to add to Windows PATH automatically"
+            if [[ "$NO_PATH_HINT" -eq 0 ]]; then
+                echo ""
+                echo "  Please add manually:"
+                echo "    1. Open: sysdm.cpl"
+                echo "    2. Advanced -> Environment Variables"
+                echo "    3. Add to PATH: $win_target_dir"
+                echo ""
+            fi
         fi
-        echo ""
-        echo "  Or use --setup-path flag to configure automatically:"
-        echo "    curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path"
-        echo ""
+    # Unix shell PATH setup
+    elif [[ "$IS_WINDOWS" -eq 0 ]]; then
+        shell_rc=""
+        if [[ "$SHELL" == *"zsh"* ]]; then
+            shell_rc="$HOME/.zshrc"
+        elif [[ "$SHELL" == *"bash"* ]]; then
+            if [[ -f "$HOME/.bashrc" ]]; then
+                shell_rc="$HOME/.bashrc"
+            elif [[ -f "$HOME/.bash_profile" ]]; then
+                shell_rc="$HOME/.bash_profile"
+            fi
+        elif [[ "$SHELL" == *"fish"* ]]; then
+            shell_rc="$HOME/.config/fish/config.fish"
+        fi
+        
+        path_export="export PATH=\"${TARGET_DIR}:\$PATH\""
+        fish_path_export="fish_add_path ${TARGET_DIR}"
+        
+        if [[ "$SETUP_PATH" -eq 1 && -n "$shell_rc" ]]; then
+            if ! grep -q "${TARGET_DIR}" "$shell_rc" 2>/dev/null; then
+                echo "" >> "$shell_rc"
+                echo "# Added by meldoc installer" >> "$shell_rc"
+                if [[ "$SHELL" == *"fish"* ]]; then
+                    echo "$fish_path_export" >> "$shell_rc"
+                else
+                    echo "$path_export" >> "$shell_rc"
+                fi
+                log_success "Added ${TARGET_DIR} to PATH in ${shell_rc}"
+                echo ""
+                echo "  To apply changes, run:"
+                echo "    source ${shell_rc}"
+                echo ""
+                echo "  Or open a new terminal."
+                echo ""
+            else
+                log_info "PATH already configured in ${shell_rc}"
+                echo ""
+                echo "  If meldoc is not found, run:"
+                echo "    source ${shell_rc}"
+                echo ""
+            fi
+        elif [[ "$NO_PATH_HINT" -eq 0 ]]; then
+            log_warning "PATH configuration needed"
+            echo ""
+            echo "  Run this command to configure PATH:"
+            if [[ -n "$shell_rc" ]]; then
+                if [[ "$SHELL" == *"fish"* ]]; then
+                    echo "    echo '$fish_path_export' >> ${shell_rc}"
+                else
+                    echo "    echo '$path_export' >> ${shell_rc} && source ${shell_rc}"
+                fi
+            else
+                echo "    $path_export"
+            fi
+            echo ""
+            echo "  Or use --setup-path flag to configure automatically:"
+            echo "    curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path"
+            echo ""
+        fi
     fi
 fi
 
