@@ -2,6 +2,7 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   "latest": "1.2.2",
 =======
   "latest": "1.2.3",
@@ -11,6 +12,9 @@
 >>>>>>> Stashed changes
 =======
   "latest": "1.2.5",
+>>>>>>> Stashed changes
+=======
+  "latest": "1.2.6",
 >>>>>>> Stashed changes
   "versions": {
     "1.2.0": {
@@ -33,6 +37,7 @@
         "windows/arm64": "v1.2.1/meldoc-1.2.1-windows-arm64.zip"
       }
     },
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -73,6 +78,16 @@
         "darwin/arm64": "v1.2.5/meldoc-1.2.5-darwin-arm64.tar.gz",
         "windows/amd64": "v1.2.5/meldoc-1.2.5-windows-amd64.zip",
         "windows/arm64": "v1.2.5/meldoc-1.2.5-windows-arm64.zip"
+>>>>>>> Stashed changes
+=======
+    "1.2.6": {
+      "files": {
+        "linux/amd64": "v1.2.6/meldoc-1.2.6-linux-amd64.tar.gz",
+        "linux/arm64": "v1.2.6/meldoc-1.2.6-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.2.6/meldoc-1.2.6-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.2.6/meldoc-1.2.6-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.2.6/meldoc-1.2.6-windows-amd64.zip",
+        "windows/arm64": "v1.2.6/meldoc-1.2.6-windows-arm64.zip"
 >>>>>>> Stashed changes
       }
     }
