@@ -12,7 +12,11 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
+>>>>>>> Stashed changes
 =======
 #   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
 >>>>>>> Stashed changes
@@ -121,7 +125,11 @@ Options:
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
+>>>>>>> Stashed changes
 =======
   --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
 >>>>>>> Stashed changes
@@ -185,10 +193,13 @@ while [[ $# -gt 0 ]]; do
             RUN_SETUP=0
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             shift
             ;;
         --no-setup)
             RUN_SETUP=0
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -787,6 +798,7 @@ fi
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
     if [[ -n "${dest:-}" && -x "$dest" ]]; then
         echo ""
@@ -805,6 +817,8 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             log_warning "Setup exited with an error. You can run 'meldoc setup' later."
         fi
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -834,6 +848,7 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
     elif [[ -n "${dest:-}" && -x "$dest" ]] || command -v meldoc >/dev/null 2>&1; then
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         echo ""
         echo -e "${CYAN}  Next step: configure Meldoc (PATH, MCP, login)${NC}"
         echo ""
@@ -859,6 +874,8 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
         if [[ -n "${dest:-}" && -x "$dest" ]]; then
             next_step_cmd="$dest setup"
             if [[ "$dest" == "$HOME"/* ]]; then
@@ -870,6 +887,9 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
         NEXT_STEP_CMD="$next_step_cmd"
         NEXT_STEP_SHOW=1
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
