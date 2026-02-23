@@ -9,7 +9,11 @@
 #   --version <version>   Install specific version (default: latest)
 #   --force               Overwrite existing installation
 #   --no-path-hint        Don't show PATH configuration hints
+<<<<<<< Updated upstream
 #   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
+>>>>>>> Stashed changes
 #   --no-setup            Do not run interactive setup after install (for CI/CD)
 #   --quiet               Minimal output (for CI/CD)
 #
@@ -30,7 +34,7 @@ GITHUB_RELEASES="https://github.com/${GITHUB_REPO}/releases"
 GLOBAL=0
 FORCE=0
 NO_PATH_HINT=0
-SETUP_PATH=0
+SETUP_PATH=1
 NO_PATH_SETUP=0
 RUN_SETUP=1
 QUIET=0
@@ -106,7 +110,11 @@ Options:
   --version <version>   Install specific version (default: latest)
   --force               Overwrite existing installation
   --no-path-hint        Don't show PATH configuration hints
+<<<<<<< Updated upstream
   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
+>>>>>>> Stashed changes
   --no-setup            Do not run interactive setup after install (for CI/CD)
   --quiet               Minimal output (for CI/CD)
   -h, --help            Show this help message
@@ -152,12 +160,13 @@ while [[ $# -gt 0 ]]; do
             NO_PATH_HINT=1
             shift
             ;;
-        --setup-path)
-            SETUP_PATH=1
-            shift
-            ;;
         --no-path-setup)
             NO_PATH_SETUP=1
+            SETUP_PATH=0
+            shift
+            ;;
+        --no-setup)
+            RUN_SETUP=0
             shift
             ;;
         --no-setup)
@@ -645,10 +654,8 @@ fi
 # ============================================================================
 # PATH setup / guidance
 # ============================================================================
-# On Windows, enable PATH setup by default (opt-out with --no-path-setup)
-if [[ "$IS_WINDOWS" -eq 1 && "$NO_PATH_SETUP" -eq 0 ]]; then
-    SETUP_PATH=1
-fi
+# PATH is added by default (opt-out with --no-path-setup). On Windows we use
+# registry; on Unix we append to .zshrc/.bashrc/config.fish when SETUP_PATH=1.
 
 if ! is_in_path "$TARGET_DIR"; then
     # Windows PATH setup (registry-based)
@@ -745,8 +752,7 @@ if ! is_in_path "$TARGET_DIR"; then
                 echo "    $path_export"
             fi
             echo ""
-            echo "  Or use --setup-path flag to configure automatically:"
-            echo "    curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path"
+            echo "  (Use --no-path-setup when installing to skip automatic PATH setup.)"
             echo ""
         fi
     fi
@@ -755,6 +761,7 @@ fi
 # ============================================================================
 # Interactive setup (optional)
 # ============================================================================
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
     if [[ -n "${dest:-}" && -x "$dest" ]]; then
@@ -774,6 +781,8 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             log_warning "Setup exited with an error. You can run 'meldoc setup' later."
         fi
 =======
+=======
+>>>>>>> Stashed changes
 # Only run setup when we have a TTY (stdin is a terminal). When install is
 # run via "curl ... | bash", stdin is a pipe, so the setup wizard would exit
 # immediately; skip it and tell the user to run it in their terminal.
@@ -813,6 +822,9 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             echo -e "    ${BOLD}meldoc setup${NC}"
         fi
         echo ""
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     fi
 fi
