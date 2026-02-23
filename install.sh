@@ -10,6 +10,7 @@
 #   --force               Overwrite existing installation
 #   --no-path-hint        Don't show PATH configuration hints
 #   --setup-path          Add install directory to PATH (modifies shell config)
+#   --no-setup            Do not run interactive setup after install (for CI/CD)
 #   --quiet               Minimal output (for CI/CD)
 #
 
@@ -31,6 +32,7 @@ FORCE=0
 NO_PATH_HINT=0
 SETUP_PATH=0
 NO_PATH_SETUP=0
+RUN_SETUP=1
 QUIET=0
 VERSION="latest"
 TARGET_DIR=""
@@ -105,6 +107,7 @@ Options:
   --force               Overwrite existing installation
   --no-path-hint        Don't show PATH configuration hints
   --setup-path          Add install directory to PATH (modifies shell config)
+  --no-setup            Do not run interactive setup after install (for CI/CD)
   --quiet               Minimal output (for CI/CD)
   -h, --help            Show this help message
 
@@ -155,6 +158,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-path-setup)
             NO_PATH_SETUP=1
+            shift
+            ;;
+        --no-setup)
+            RUN_SETUP=0
             shift
             ;;
         --quiet|-q)
@@ -741,6 +748,29 @@ if ! is_in_path "$TARGET_DIR"; then
             echo "  Or use --setup-path flag to configure automatically:"
             echo "    curl -fsSL https://meldoc.io/install.sh | bash -s -- --setup-path"
             echo ""
+        fi
+    fi
+fi
+
+# ============================================================================
+# Interactive setup (optional)
+# ============================================================================
+if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
+    if [[ -n "${dest:-}" && -x "$dest" ]]; then
+        echo ""
+        log_info "Running interactive setup..."
+        if "$dest" setup; then
+            : # setup completed
+        else
+            log_warning "Setup exited with an error. You can run 'meldoc setup' later."
+        fi
+    elif command -v meldoc >/dev/null 2>&1; then
+        echo ""
+        log_info "Running interactive setup..."
+        if meldoc setup; then
+            : # setup completed
+        else
+            log_warning "Setup exited with an error. You can run 'meldoc setup' later."
         fi
     fi
 fi

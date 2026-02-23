@@ -1,27 +1,14 @@
 {
-<<<<<<< Updated upstream
-  "latest": "1.2.9",
+  "latest": "1.2.11",
   "versions": {
-    "1.2.9": {
+    "1.2.11": {
       "files": {
-        "linux/amd64": "v1.2.9/meldoc-1.2.9-linux-amd64.tar.gz",
-        "linux/arm64": "v1.2.9/meldoc-1.2.9-linux-arm64.tar.gz",
-        "darwin/amd64": "v1.2.9/meldoc-1.2.9-darwin-amd64.tar.gz",
-        "darwin/arm64": "v1.2.9/meldoc-1.2.9-darwin-arm64.tar.gz",
-        "windows/amd64": "v1.2.9/meldoc-1.2.9-windows-amd64.zip",
-        "windows/arm64": "v1.2.9/meldoc-1.2.9-windows-arm64.zip"
-=======
-  "latest": "1.2.10",
-  "versions": {
-    "1.2.10": {
-      "files": {
-        "linux/amd64": "v1.2.10/meldoc-1.2.10-linux-amd64.tar.gz",
-        "linux/arm64": "v1.2.10/meldoc-1.2.10-linux-arm64.tar.gz",
-        "darwin/amd64": "v1.2.10/meldoc-1.2.10-darwin-amd64.tar.gz",
-        "darwin/arm64": "v1.2.10/meldoc-1.2.10-darwin-arm64.tar.gz",
-        "windows/amd64": "v1.2.10/meldoc-1.2.10-windows-amd64.zip",
-        "windows/arm64": "v1.2.10/meldoc-1.2.10-windows-arm64.zip"
->>>>>>> Stashed changes
+        "linux/amd64": "v1.2.11/meldoc-1.2.11-linux-amd64.tar.gz",
+        "linux/arm64": "v1.2.11/meldoc-1.2.11-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.2.11/meldoc-1.2.11-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.2.11/meldoc-1.2.11-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.2.11/meldoc-1.2.11-windows-amd64.zip",
+        "windows/arm64": "v1.2.11/meldoc-1.2.11-windows-arm64.zip"
       }
     }
   }
