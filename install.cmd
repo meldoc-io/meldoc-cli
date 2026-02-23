@@ -239,6 +239,15 @@ if "%QUIET%"=="1" (
         echo.
     )
     
+    echo   Next step: configure Meldoc (PATH, MCP, login)
+    echo.
+    echo   To configure PATH, MCP, and login — run this in a new terminal:
+    echo.
+    echo     %DEST_PATH% setup
+    echo.
+    echo   (This path works even if meldoc is not in your PATH yet.)
+    echo.
+    
     echo   Get started:
     echo     meldoc --help
     echo     meldoc init

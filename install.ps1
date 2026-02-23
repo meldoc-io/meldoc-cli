@@ -21,6 +21,9 @@
 .PARAMETER NoPathHint
     Don't show PATH configuration hints
 
+.PARAMETER NoSetup
+    Do not run interactive setup after install (for CI/CD)
+
 .PARAMETER Quiet
     Minimal output (for CI/CD)
 
@@ -45,6 +48,7 @@ param(
     [switch]$Force,
     [switch]$NoPathHint,
     [switch]$NoPathSetup,
+    [switch]$NoSetup,
     [switch]$Quiet
 )
 
@@ -460,6 +464,35 @@ try {
             Write-Host "    3. Add to PATH: $TargetDir"
             Write-Host ""
             Write-Host "  Then restart PowerShell for changes to take effect"
+            Write-Host ""
+        }
+    }
+
+    # ============================================================================
+    # Interactive setup (optional)
+    # ============================================================================
+    # When run via "irm ... | iex", the session is not interactive; skip running
+    # setup and show a clear "run in new terminal" message instead.
+    if (-not $NoSetup -and -not $Quiet -and (Test-Path $DestPath)) {
+        if ([Environment]::UserInteractive) {
+            Write-Host ""
+            Write-Info "Running interactive setup..."
+            $prevErr = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            & $DestPath setup
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warn "Setup exited with an error. You can run 'meldoc setup' later."
+            }
+            $ErrorActionPreference = $prevErr
+        } else {
+            Write-Host ""
+            Write-Host "  Next step: configure Meldoc (PATH, MCP, login)" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "  To configure PATH, MCP, and login — run this in a new terminal:" -ForegroundColor White
+            Write-Host ""
+            Write-Host "    $DestPath setup" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "  (This path works even if meldoc is not in your PATH yet.)"
             Write-Host ""
         }
     }

@@ -755,6 +755,7 @@ fi
 # ============================================================================
 # Interactive setup (optional)
 # ============================================================================
+<<<<<<< Updated upstream
 if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
     if [[ -n "${dest:-}" && -x "$dest" ]]; then
         echo ""
@@ -772,6 +773,47 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
         else
             log_warning "Setup exited with an error. You can run 'meldoc setup' later."
         fi
+=======
+# Only run setup when we have a TTY (stdin is a terminal). When install is
+# run via "curl ... | bash", stdin is a pipe, so the setup wizard would exit
+# immediately; skip it and tell the user to run it in their terminal.
+if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
+    if [[ -t 0 ]] && { [[ -n "${dest:-}" && -x "$dest" ]] || command -v meldoc >/dev/null 2>&1; }; then
+        echo ""
+        log_info "Running interactive setup..."
+        if [[ -n "${dest:-}" && -x "$dest" ]]; then
+            if "$dest" setup; then
+                : # setup completed
+            else
+                log_warning "Setup exited with an error. You can run 'meldoc setup' later."
+            fi
+        else
+            if meldoc setup; then
+                : # setup completed
+            else
+                log_warning "Setup exited with an error. You can run 'meldoc setup' later."
+            fi
+        fi
+    elif [[ -n "${dest:-}" && -x "$dest" ]] || command -v meldoc >/dev/null 2>&1; then
+        echo ""
+        echo -e "${CYAN}  Next step: configure Meldoc (PATH, MCP, login)${NC}"
+        echo ""
+        echo "  To configure PATH, MCP, and login — run this in a new terminal:"
+        echo ""
+        if [[ -n "${dest:-}" && -x "$dest" ]]; then
+            # Show path with ~ for home so it's easy to copy-paste
+            setup_cmd="$dest setup"
+            if [[ "$dest" == "$HOME"/* ]]; then
+                setup_cmd="~${dest#$HOME} setup"
+            fi
+            echo -e "    ${BOLD}$setup_cmd${NC}"
+            echo ""
+            echo "  (This path works even if meldoc is not in your PATH yet.)"
+        else
+            echo -e "    ${BOLD}meldoc setup${NC}"
+        fi
+        echo ""
+>>>>>>> Stashed changes
     fi
 fi
 
