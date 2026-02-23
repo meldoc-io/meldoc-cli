@@ -10,7 +10,11 @@
 #   --force               Overwrite existing installation
 #   --no-path-hint        Don't show PATH configuration hints
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
+>>>>>>> Stashed changes
 =======
 #   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
 >>>>>>> Stashed changes
@@ -111,7 +115,11 @@ Options:
   --force               Overwrite existing installation
   --no-path-hint        Don't show PATH configuration hints
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   --setup-path          Add install directory to PATH (modifies shell config)
+=======
+  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
+>>>>>>> Stashed changes
 =======
   --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
 >>>>>>> Stashed changes
@@ -167,10 +175,13 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-setup)
             RUN_SETUP=0
+<<<<<<< Updated upstream
             shift
             ;;
         --no-setup)
             RUN_SETUP=0
+=======
+>>>>>>> Stashed changes
             shift
             ;;
         --quiet|-q)
@@ -763,6 +774,7 @@ fi
 # ============================================================================
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
     if [[ -n "${dest:-}" && -x "$dest" ]]; then
         echo ""
@@ -781,6 +793,8 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             log_warning "Setup exited with an error. You can run 'meldoc setup' later."
         fi
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 # Only run setup when we have a TTY (stdin is a terminal). When install is
@@ -804,6 +818,7 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             fi
         fi
     elif [[ -n "${dest:-}" && -x "$dest" ]] || command -v meldoc >/dev/null 2>&1; then
+<<<<<<< Updated upstream
         echo ""
         echo -e "${CYAN}  Next step: configure Meldoc (PATH, MCP, login)${NC}"
         echo ""
@@ -825,6 +840,18 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======
+>>>>>>> Stashed changes
+=======
+        if [[ -n "${dest:-}" && -x "$dest" ]]; then
+            next_step_cmd="$dest setup"
+            if [[ "$dest" == "$HOME"/* ]]; then
+                next_step_cmd="~${dest#$HOME} setup"
+            fi
+        else
+            next_step_cmd="meldoc setup"
+        fi
+        NEXT_STEP_CMD="$next_step_cmd"
+        NEXT_STEP_SHOW=1
 >>>>>>> Stashed changes
     fi
 fi
@@ -850,4 +877,18 @@ if [[ "$QUIET" -eq 0 ]]; then
     fi
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+    # Show "Next step" last so the user doesn't miss it (no-TTY / pipe install)
+    if [[ "${NEXT_STEP_SHOW:-0}" -eq 1 && -n "${NEXT_STEP_CMD:-}" ]]; then
+        echo ""
+        echo -e "${GREEN}============================================================${NC}"
+        echo -e "  ${BOLD}👉 Next step: configure Meldoc (PATH, MCP, login)${NC}"
+        echo ""
+        echo "  Run this in a new terminal:"
+        echo ""
+        echo -e "    ${BOLD}${GREEN}${NEXT_STEP_CMD}${NC}"
+        echo ""
+        echo "  (Works even if meldoc is not in your PATH yet.)"
+        echo -e "${GREEN}============================================================${NC}"
+    fi
 fi
