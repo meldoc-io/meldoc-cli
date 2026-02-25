@@ -9,31 +9,7 @@
 #   --version <version>   Install specific version (default: latest)
 #   --force               Overwrite existing installation
 #   --no-path-hint        Don't show PATH configuration hints
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#   --setup-path          Add install directory to PATH (modifies shell config)
-=======
 #   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
-=======
-#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
-=======
-#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
-=======
-#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
-=======
-#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
-=======
-#   --no-path-setup       Do not add install directory to PATH (default: add to .zshrc/.bashrc etc.)
->>>>>>> Stashed changes
 #   --no-setup            Do not run interactive setup after install (for CI/CD)
 #   --quiet               Minimal output (for CI/CD)
 #
@@ -130,31 +106,7 @@ Options:
   --version <version>   Install specific version (default: latest)
   --force               Overwrite existing installation
   --no-path-hint        Don't show PATH configuration hints
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  --setup-path          Add install directory to PATH (modifies shell config)
-=======
   --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
-=======
-  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
-=======
-  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
-=======
-  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
-=======
-  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
-=======
-  --no-path-setup       Do not add to PATH (default: adds to .zshrc/.bashrc/config.fish)
->>>>>>> Stashed changes
   --no-setup            Do not run interactive setup after install (for CI/CD)
   --quiet               Minimal output (for CI/CD)
   -h, --help            Show this help message
@@ -207,25 +159,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-setup)
             RUN_SETUP=0
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            shift
-            ;;
-        --no-setup)
-            RUN_SETUP=0
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
             shift
             ;;
         --quiet|-q)
@@ -821,43 +754,6 @@ fi
 # ============================================================================
 # Interactive setup (optional)
 # ============================================================================
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
-    if [[ -n "${dest:-}" && -x "$dest" ]]; then
-        echo ""
-        log_info "Running interactive setup..."
-        if "$dest" setup; then
-            : # setup completed
-        else
-            log_warning "Setup exited with an error. You can run 'meldoc setup' later."
-        fi
-    elif command -v meldoc >/dev/null 2>&1; then
-        echo ""
-        log_info "Running interactive setup..."
-        if meldoc setup; then
-            : # setup completed
-        else
-            log_warning "Setup exited with an error. You can run 'meldoc setup' later."
-        fi
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 # Only run setup when we have a TTY (stdin is a terminal). When install is
 # run via "curl ... | bash", stdin is a pipe, so the setup wizard would exit
 # immediately; skip it and tell the user to run it in their terminal.
@@ -879,42 +775,6 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
             fi
         fi
     elif [[ -n "${dest:-}" && -x "$dest" ]] || command -v meldoc >/dev/null 2>&1; then
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        echo ""
-        echo -e "${CYAN}  Next step: configure Meldoc (PATH, MCP, login)${NC}"
-        echo ""
-        echo "  To configure PATH, MCP, and login — run this in a new terminal:"
-        echo ""
-        if [[ -n "${dest:-}" && -x "$dest" ]]; then
-            # Show path with ~ for home so it's easy to copy-paste
-            setup_cmd="$dest setup"
-            if [[ "$dest" == "$HOME"/* ]]; then
-                setup_cmd="~${dest#$HOME} setup"
-            fi
-            echo -e "    ${BOLD}$setup_cmd${NC}"
-            echo ""
-            echo "  (This path works even if meldoc is not in your PATH yet.)"
-        else
-            echo -e "    ${BOLD}meldoc setup${NC}"
-        fi
-        echo ""
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         if [[ -n "${dest:-}" && -x "$dest" ]]; then
             next_step_cmd="$dest setup"
             if [[ "$dest" == "$HOME"/* ]]; then
@@ -925,19 +785,6 @@ if [[ "$RUN_SETUP" -eq 1 && "$QUIET" -eq 0 ]]; then
         fi
         NEXT_STEP_CMD="$next_step_cmd"
         NEXT_STEP_SHOW=1
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     fi
 fi
 
