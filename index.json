@@ -6,6 +6,7 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   "latest": "1.2.19",
 =======
   "latest": "1.2.27-beta",
@@ -99,6 +100,18 @@
         "darwin/arm64": "v1.2.27-beta/meldoc-1.2.27-beta-darwin-arm64.tar.gz",
         "windows/amd64": "v1.2.27-beta/meldoc-1.2.27-beta-windows-amd64.zip",
         "windows/arm64": "v1.2.27-beta/meldoc-1.2.27-beta-windows-arm64.zip"
+>>>>>>> Stashed changes
+=======
+  "latest": "1.2.28-beta",
+  "versions": {
+    "1.2.28-beta": {
+      "files": {
+        "linux/amd64": "v1.2.28-beta/meldoc-1.2.28-beta-linux-amd64.tar.gz",
+        "linux/arm64": "v1.2.28-beta/meldoc-1.2.28-beta-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.2.28-beta/meldoc-1.2.28-beta-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.2.28-beta/meldoc-1.2.28-beta-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.2.28-beta/meldoc-1.2.28-beta-windows-amd64.zip",
+        "windows/arm64": "v1.2.28-beta/meldoc-1.2.28-beta-windows-arm64.zip"
 >>>>>>> Stashed changes
       }
     }
