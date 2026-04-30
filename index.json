@@ -1,5 +1,5 @@
 {
-  "latest": "1.2.38-beta",
+  "latest": "1.2.39-beta",
   "versions": {
     "1.2.33-beta": {
       "files": {
@@ -49,6 +49,16 @@
         "darwin/arm64": "v1.2.38-beta/meldoc-1.2.38-beta-darwin-arm64.tar.gz",
         "windows/amd64": "v1.2.38-beta/meldoc-1.2.38-beta-windows-amd64.zip",
         "windows/arm64": "v1.2.38-beta/meldoc-1.2.38-beta-windows-arm64.zip"
+      }
+    },
+    "1.2.39-beta": {
+      "files": {
+        "linux/amd64": "v1.2.39-beta/meldoc-1.2.39-beta-linux-amd64.tar.gz",
+        "linux/arm64": "v1.2.39-beta/meldoc-1.2.39-beta-linux-arm64.tar.gz",
+        "darwin/amd64": "v1.2.39-beta/meldoc-1.2.39-beta-darwin-amd64.tar.gz",
+        "darwin/arm64": "v1.2.39-beta/meldoc-1.2.39-beta-darwin-arm64.tar.gz",
+        "windows/amd64": "v1.2.39-beta/meldoc-1.2.39-beta-windows-amd64.zip",
+        "windows/arm64": "v1.2.39-beta/meldoc-1.2.39-beta-windows-arm64.zip"
       }
     }
   }
