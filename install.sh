@@ -21,7 +21,6 @@ set -euo pipefail
 # ============================================================================
 TOOL_NAME="meldoc"
 GITHUB_REPO="meldoc-io/meldoc-cli"  # GitHub repository (owner/repo)
-GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}"
 GITHUB_RELEASES="https://github.com/${GITHUB_REPO}/releases"
 
 # ============================================================================
@@ -306,22 +305,26 @@ else
 fi
 
 # ============================================================================
-# Version resolution (using GitHub API)
+# Version resolution
 # ============================================================================
 log_info "Resolving version..."
 
 if [[ "$VERSION" == "latest" ]]; then
-    # Get latest release from GitHub API
-    RELEASE_INFO=$(curl -fsSL "${GITHUB_API}/releases/latest" 2>/dev/null || echo "")
+    # releases/latest redirects to releases/tag/<tag>. Not api.github.com: that
+    # allows 60 unauthenticated requests an hour per IP and answers 403 past it.
+    LATEST_URL=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${GITHUB_RELEASES}/latest" 2>/dev/null) || LATEST_URL=""
     
-    if [[ -z "$RELEASE_INFO" ]]; then
+    if [[ -z "$LATEST_URL" ]]; then
         log_error "Could not fetch release information from GitHub"
         log_output "  Please check your internet connection"
         exit 1
     fi
     
-    # Extract tag_name from JSON (works without jq)
-    VERSION_TAG=$(echo "$RELEASE_INFO" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    # With no release published, the redirect goes to releases/ instead
+    VERSION_TAG=""
+    if [[ "$LATEST_URL" == */releases/tag/* ]]; then
+        VERSION_TAG="${LATEST_URL##*/}"
+    fi
     
     if [[ -z "$VERSION_TAG" ]]; then
         log_error "Could not determine latest version"

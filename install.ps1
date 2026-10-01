@@ -59,7 +59,6 @@ $ErrorActionPreference = "Stop"
 # ============================================================================
 $ToolName = "meldoc"
 $GitHubRepo = "meldoc-io/meldoc-cli"
-$GitHubApi = "https://api.github.com/repos/$GitHubRepo"
 $GitHubReleases = "https://github.com/$GitHubRepo/releases"
 
 # ============================================================================
@@ -178,22 +177,27 @@ $Arch = switch ($env:PROCESSOR_ARCHITECTURE) {
 Write-Output-Msg "  Platform: $OS/$Arch"
 
 # ============================================================================
-# Version Resolution (using GitHub API)
+# Version Resolution
 # ============================================================================
 Write-Info "Resolving version..."
 
 if ($Version -eq "latest") {
     try {
-        # Get latest release from GitHub API
-        $headers = @{
-            "Accept" = "application/vnd.github.v3+json"
-            "User-Agent" = "MeldocInstaller"
-        }
+        # releases/latest redirects to releases/tag/<tag>. Not api.github.com: that
+        # allows 60 unauthenticated requests an hour per IP and answers 403 past it.
+        # HttpWebRequest: Invoke-WebRequest throws on a 302 it is told not to follow.
+        $request = [System.Net.HttpWebRequest]::Create("$GitHubReleases/latest")
+        $request.Method = "HEAD"
+        $request.AllowAutoRedirect = $false
+        $request.UserAgent = "MeldocInstaller"
+        $response = $request.GetResponse()
+        $location = $response.Headers["Location"]
+        $response.Close()
         
-        $releaseInfo = Invoke-RestMethod -Uri "$GitHubApi/releases/latest" -Headers $headers -UseBasicParsing
-        $VersionTag = $releaseInfo.tag_name
-        
-        if ([string]::IsNullOrWhiteSpace($VersionTag)) {
+        # With no release published, the redirect goes to releases/ instead
+        if ($location -match '/releases/tag/([^/]+)$') {
+            $VersionTag = $Matches[1]
+        } else {
             throw "Could not determine latest version"
         }
         

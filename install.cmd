@@ -10,7 +10,6 @@ setlocal enabledelayedexpansion
 set "TOOL_NAME=meldoc"
 set "GITHUB_REPO=meldoc-io/meldoc-cli"
 set "GITHUB_RELEASES=https://github.com/%GITHUB_REPO%/releases"
-set "GITHUB_API=https://api.github.com/repos/%GITHUB_REPO%"
 
 :: Default values
 set "VERSION=latest"
@@ -79,18 +78,16 @@ if "%QUIET%"=="0" echo [INFO] Detected architecture: windows/%ARCH%
 :: Resolve version
 if "%QUIET%"=="0" echo [INFO] Resolving version...
 
+:: releases/latest redirects to releases/tag/vX.Y.Z. Not api.github.com: that
+:: allows 60 unauthenticated requests an hour per IP and answers 403 past it.
+:: With no release published, the redirect goes to releases/ instead.
 if "%VERSION%"=="latest" (
-    :: Get latest version from GitHub API
-    for /f "tokens=*" %%i in ('curl -fsSL "%GITHUB_API%/releases/latest" 2^>nul ^| findstr /r "tag_name"') do (
-        set "LINE=%%i"
+    set "LATEST_URL="
+    for /f "delims=" %%i in ('curl -fsSLI -o NUL -w "%%{url_effective}" "%GITHUB_RELEASES%/latest" 2^>nul') do (
+        set "LATEST_URL=%%i"
     )
-    :: Extract version from JSON (crude but works)
-    for /f "tokens=2 delims=:," %%a in ("!LINE!") do (
-        set "VERSION_TAG=%%~a"
-    )
-    :: Clean up the version tag
-    set "VERSION_TAG=!VERSION_TAG: =!"
-    set "VERSION_TAG=!VERSION_TAG:"=!"
+    set "VERSION_TAG=!LATEST_URL:*/releases/tag/=!"
+    if "!VERSION_TAG!"=="!LATEST_URL!" set "VERSION_TAG="
     
     if "!VERSION_TAG!"=="" (
         echo [ERROR] Could not determine latest version
